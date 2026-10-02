@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 信息源日报</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #2a3139;
+    --text: #c9d1d9; --muted: #8b949e; --accent: #4fb6ff; --accent2: #3fb950;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.75 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  header {
+    padding: 36px 20px 22px; text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: radial-gradient(ellipse at 50% -40%, #1a2b44 0%, var(--bg) 65%);
+  }
+  header h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: 1px; }
+  header h1 span { color: var(--accent); }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 20px 16px 60px; display: flex; gap: 20px; }
+  nav {
+    width: 190px; flex-shrink: 0; position: sticky; top: 16px; align-self: flex-start;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 10px;
+    max-height: 80vh; overflow: auto;
+  }
+  nav a {
+    display: block; padding: 7px 10px; border-radius: 7px; color: var(--muted);
+    text-decoration: none; font-size: 13px; margin-bottom: 2px;
+  }
+  nav a:hover { background: #1f2630; color: var(--text); }
+  nav a.active { background: #12283d; color: var(--accent); font-weight: 600; }
+  main { flex: 1; min-width: 0; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 28px 32px; }
+  main.loading { color: var(--muted); text-align: center; padding: 80px 0; }
+  article h1 { font-size: 22px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+  article h2 { font-size: 18px; margin-top: 34px; color: var(--accent); border-left: 3px solid var(--accent); padding-left: 10px; }
+  article h3 { font-size: 16px; }
+  article blockquote {
+    margin: 12px 0; padding: 8px 14px; color: var(--muted); font-size: 13px;
+    background: #11161d; border-left: 3px solid var(--accent2); border-radius: 4px;
+  }
+  article li { margin: 7px 0; }
+  article a { color: var(--accent); text-decoration: none; }
+  article a:hover { text-decoration: underline; }
+  article code { background: #1c2430; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+  article pre { background: #1c2430; padding: 14px; border-radius: 8px; overflow: auto; }
+  article hr { border: none; border-top: 1px solid var(--border); margin: 26px 0; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 0 40px; }
+  @media (max-width: 700px) {
+    .wrap { flex-direction: column-reverse; }
+    nav { width: 100%; position: static; max-height: 150px; }
+    main { padding: 20px 18px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>AI 信息源<span>日报</span></h1>
+  <p>每天由小蓝虾整合飞书群「RSS 推送」的全天信息自动生成 · 仓库 ai-digest</p>
+</header>
+<div class="wrap">
+  <nav id="nav"></nav>
+  <main id="main" class="loading">加载中…</main>
+</div>
+<footer>内容由小蓝虾每日 24:00 整合生成 ·Powered by GitHub Pages</footer>
+
+<script>
+// 极简 markdown 渲染：标题/列表/引用/粗斜体/行内码/链接/代码块/分割线
+function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function inline(s) {
+  s = esc(s);
+  s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+  s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return s;
+}
+function md(src) {
+  var lines = src.replace(/\r/g, "").split("\n"), out = [], i = 0;
+  var listStack = null; // "ul" | "ol"
+  function closeList() { if (listStack) { out.push("</" + listStack + ">"); listStack = null; } }
+  while (i < lines.length) {
+    var L = lines[i];
+    if (/^```/.test(L)) {
+      closeList();
+      var buf = []; i++;
+      while (i < lines.length && !/^```/.test(lines[i])) { buf.push(lines[i]); i++; }
+      i++;
+      out.push("<pre><code>" + esc(buf.join("\n")) + "</code></pre>");
+      continue;
+    }
+    var h = L.match(/^(#{1,4})\s+(.*)/);
+    if (h) { closeList(); out.push("<h" + h[1].length + ">" + inline(h[2]) + "</h" + h[1].length + ">"); i++; continue; }
+    if (/^\s*(-{3,}|\*{3,})\s*$/.test(L)) { closeList(); out.push("<hr>"); i++; continue; }
+    if (/^\s*>\s?/.test(L)) {
+      closeList();
+      var q = []; while (i < lines.length && /^\s*>\s?/.test(lines[i])) { q.push(lines[i].replace(/^\s*>\s?/, "")); i++; }
+      out.push("<blockquote>" + inline(q.join(" ")) + "</blockquote>");
+      continue;
+    }
+    var ul = L.match(/^\s*[-*]\s+(.*)/);
+    var ol = L.match(/^\s*\d+[.、]\s+(.*)/);
+    if (ul || ol) {
+      var want = ul ? "ul" : "ol";
+      if (listStack !== want) { closeList(); out.push("<" + want + ">"); listStack = want; }
+      out.push("<li>" + inline((ul || ol)[1]) + "</li>");
+      i++; continue;
+    }
+    if (L.trim() === "") { closeList(); i++; continue; }
+    closeList(); out.push("<p>" + inline(L) + "</p>"); i++;
+  }
+  closeList();
+  return out.join("\n");
+}
+
+var BASE = location.pathname.replace(/[^/]*$/, "");
+function loadIndex() {
+  return fetch(BASE + "data/index.json", { cache: "no-store" }).then(function (r) {
+    if (!r.ok) throw new Error("index.json " + r.status);
+    return r.json();
+  });
+}
+function pickDay(list, want) {
+  if (!list.length) throw new Error("暂无日报");
+  if (want) {
+    var hit = list.filter(function (d) { return d.date === want; });
+    if (hit.length) return hit[0];
+  }
+  return list[0];
+}
+function render(list, want) {
+  var nav = document.getElementById("nav");
+  nav.innerHTML = list.map(function (d) {
+    return '<a href="#/' + d.date + '" data-date="' + d.date + '">' + d.date + "</a>";
+  }).join("");
+  var day = pickDay(list, want);
+  setActive(day.date);
+  var main = document.getElementById("main");
+  main.className = "loading"; main.textContent = "加载 " + day.date + " …";
+  fetch(BASE + "data/" + day.file, { cache: "no-store" }).then(function (r) {
+    if (!r.ok) throw new Error(r.status);
+    return r.text();
+  }).then(function (text) {
+    main.className = "";
+    main.innerHTML = "<article>" + md(text) + "</article>";
+  }).catch(function (e) {
+    main.className = ""; main.innerHTML = "<article><h2>加载失败</h2><p>" + esc(String(e)) + "</p></article>";
+  });
+}
+function setActive(date) {
+  var links = document.querySelectorAll("#nav a");
+  for (var i = 0; i < links.length; i++)
+    links[i].className = links[i].getAttribute("data-date") === date ? "active" : "";
+}
+function route() {
+  loadIndex().then(function (list) { render(list, (location.hash.match(/^#\/(\d{4}-\d{2}-\d{2})/) || [])[1]); })
+    .catch(function (e) {
+      var main = document.getElementById("main");
+      main.className = "";
+      main.innerHTML = "<article><h2>暂无日报</h2><p>等待小蓝虾的第一次更新；" + esc(String(e)) + "</p></article>";
+    });
+}
+window.addEventListener("hashchange", function () {
+  var want = (location.hash.match(/^#\/(\d{4}-\d{2}-\d{2})/) || [])[1];
+  if (want) { setActive(want); route(); }
+});
+route();
+</script>
+</body>
+</html>
