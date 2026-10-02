@@ -18,7 +18,7 @@ scripts/build_index.py
 
 ## 小蓝虾每日更新协议
 
-1. 文件名：`data/YYYY-MM-DD.md`，日期取北京时间当天（24 点后即次日）。
+1. 文件名：`data/YYYY-MM-DD.md`，**日期 = 报告内容所属的那一天**（24 点跑的就是刚结束的这一天：10-03 00:00 跑 → 写 `2026-10-02.md`）。
 2. 格式（markdown）：
    - 第一行一级标题：`# AI 信息源日报 · YYYY-MM-DD`
    - 第二行引用行写统计：`> 来源：8 位博主 · 共 N 条 ｜ 生成：小蓝虾`
@@ -40,11 +40,12 @@ git push
 每天 24:00 执行「AI 信息源日报更新」：
 1. 读取飞书群「RSS 推送」今天的全部推送卡片与讨论（以用户身份）。
 2. 整理成日报 markdown：
-   第一行 "# AI 信息源日报 · 今天日期"，第二行 "> 来源：N 位博主 · 共 M 条 ｜ 生成：小蓝虾"，
+   第一行 "# AI 信息源日报 · D"，D=刚结束的这一天（10-03 00:00 跑就是 2026-10-02），
+   第二行 "> 来源：N 位博主 · 共 M 条 ｜ 生成：小蓝虾"，
    正文按 "##" 分节（模型与产品/行业动态/论文与技术/观点与讨论），
    每条格式 "- **博主名**：[标题](原文链接) 一句话要点"。
-3. 保存到 C:\Users\17551\Documents\ai-digest\data\今天日期.md
-   （首次运行先确认该目录已是 ai-digest 仓库且 git pull 过）。
+3. 保存为 C:\Users\17551\Documents\ai-digest\data\D.md
+   （首次运行先确认该目录已是 ai-digest 仓库且 git pull 过；不要手改 index.json，Action 会自动重建）。
 4. cd C:\Users\17551\Documents\ai-digest && git add data/今天日期.md
    && git commit -m "digest: 今天日期" && git push。
 5. 推送成功后在群里发一行确认：✅ 今日 AI 信息源日报已发布到站点。
