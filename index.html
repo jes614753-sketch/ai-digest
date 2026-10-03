@@ -60,13 +60,13 @@
 <body>
 <header>
   <h1>AI 信息源<span>日报</span></h1>
-  <p>每天由小蓝虾整合飞书群「RSS 推送」的全天信息自动生成 · 仓库 ai-digest</p>
+  <p>前一天 RSS 来源中文精选 · 程序统一生成、发布与核验 · 仓库 ai-digest</p>
 </header>
 <div class="wrap">
   <nav id="nav"></nav>
   <main id="main" class="loading">加载中…</main>
 </div>
-<footer>内容由小蓝虾每日 24:00 整合生成 · Powered by GitHub Pages</footer>
+<footer>北京时间每日 00:30 启动 · 网站核验后通知 · Powered by GitHub Pages</footer>
 
 <script>
 // 极简 markdown 渲染：标题/列表/引用/粗斜体/行内码/链接/代码块/分割线
@@ -165,7 +165,7 @@ function route() {
     .catch(function (e) {
       var main = document.getElementById("main");
       main.className = "";
-      main.innerHTML = "<article><h2>暂无日报</h2><p>等待小蓝虾的第一次更新；" + esc(String(e)) + "</p></article>";
+      main.innerHTML = "<article><h2>暂无日报</h2><p>等待首份日报生成；" + esc(String(e)) + "</p></article>";
     });
 }
 window.addEventListener("hashchange", function () {
